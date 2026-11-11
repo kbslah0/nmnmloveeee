@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>موقع هدية عيد الحبيبة - أحلى نمنم</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: radial-gradient(circle at center, #4c0519 0%, #1c050c 70%, #090104 100%);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Animations */
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 25px rgba(244, 63, 94, 0.6), 0 0 50px rgba(225, 29, 72, 0.4); transform: scale(1); }
+            50% { box-shadow: 0 0 45px rgba(244, 63, 94, 0.9), 0 0 90px rgba(225, 29, 72, 0.7); transform: scale(1.03); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-12px) rotate(2deg); }
+        }
+
+        @keyframes boxBounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            30% { transform: translateY(-15px) scale(1.05) rotate(-3deg); }
+            60% { transform: translateY(-5px) scale(0.98) rotate(3deg); }
+        }
+
+        @keyframes lidOpen {
+            0% { transform: translateY(0) rotate(0); }
+            100% { transform: translateY(-80px) rotate(-25deg); opacity: 0; }
+        }
+
+        @keyframes heartBeam {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animated-box {
+            animation: pulseGlow 3s infinite ease-in-out, float 4s infinite ease-in-out;
+        }
+
+        .box-shake:hover {
+            animation: boxBounce 0.6s ease-in-out;
+        }
+
+        .lid-open {
+            animation: lidOpen 0.8s forwards ease-out;
+        }
+
+        .card-appear {
+            animation: heartBeam 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Glassmorphism */
+        .glass-card {
+            background: rgba(30, 10, 18, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(244, 63, 94, 0.2);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1c050c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e11d48;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="text-rose-100 flex flex-col items-center justify-between min-h-screen relative selection:bg-rose-600 selection:text-white">
+
+    <!-- Canvas background for continuous falling rose petals -->
+    <canvas id="roseCanvas" class="fixed inset-0 pointer-events-none z-10"></canvas>
+
+    <!-- Top Romantic Header Bar -->
+    <header class="w-full max-w-4xl mx-auto p-4 flex justify-between items-center z-20">
+        <div class="flex items-center gap-2 bg-rose-950/60 px-4 py-2 rounded-full border border-rose-800/50">
+            <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
+            <span class="text-sm font-semibold tracking-wider text-rose-200">عيد الحب لحبيبتي نمنم ❤️</span>
+        </div>
+        
+        <!-- Audio Control Toggle -->
+        <button id="audioBtn" class="flex items-center gap-2 bg-rose-900/80 hover:bg-rose-800 text-rose-100 px-4 py-2 rounded-full border border-rose-500/40 transition-all duration-300 shadow-lg hover:scale-105 active:scale-95">
+            <svg id="musicIcon" class="w-5 h-5 text-rose-300" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+            </svg>
+            <span id="audioStatusText" class="text-xs font-bold">تشغيل الموسيقى 🎵</span>
+        </button>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="w-full max-w-3xl mx-auto px-4 py-6 flex-1 flex flex-col items-center justify-center z-20 text-center relative">
+        
+        <!-- Progress Stepper Tracker -->
+        <div class="w-full max-w-md mb-8 flex justify-between items-center relative px-4">
+            <div class="absolute top-1/2 left-0 right-0 h-1 bg-rose-950 -translate-y-1/2 z-0 rounded-full"></div>
+            <div id="progressLine" class="absolute top-1/2 right-0 h-1 bg-gradient-to-l from-rose-500 to-red-600 -translate-y-1/2 z-0 rounded-full transition-all duration-500" style="width: 33%;"></div>
+
+            <!-- Step 1 Indicator -->
+            <div id="step1Dot" class="w-10 h-10 rounded-full bg-rose-600 text-white flex items-center justify-center font-extrabold z-10 shadow-lg shadow-rose-600/50 transition-all duration-300 ring-4 ring-rose-950">1</div>
+            <!-- Step 2 Indicator -->
+            <div id="step2Dot" class="w-10 h-10 rounded-full bg-rose-950 text-rose-400 flex items-center justify-center font-extrabold z-10 border border-rose-800 transition-all duration-300 ring-4 ring-rose-950">2</div>
+            <!-- Step 3 Indicator -->
+            <div id="step3Dot" class="w-10 h-10 rounded-full bg-rose-950 text-rose-400 flex items-center justify-center font-extrabold z-10 border border-rose-800 transition-all duration-300 ring-4 ring-rose-950">3</div>
+        </div>
+
+        <!-- STAGE 1: Gift Box & Initial Sparkle -->
+        <section id="stage1" class="w-full flex flex-col items-center">
+            <div class="mb-6 space-y-2">
+                <h1 class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-200 via-rose-400 to-red-500 drop-shadow-md">
+                    مفاجأة خاصة لأحلى "نمنم" بالدنيا! 💖
+                </h1>
+                <p class="text-rose-300 text-lg md:text-xl font-medium">
+                    اضغطي على صندوق الهدايا وشوفي شنو ضاملج قلبي..
+                </p>
+            </div>
+
+            <!-- Interactive Gift Box Container -->
+            <div id="boxContainer" class="relative cursor-pointer my-8 group box-shake transition-transform">
+                <!-- Glowing Backdrop -->
+                <div class="absolute -inset-4 bg-gradient-to-r from-rose-600 to-red-600 rounded-3xl blur-2xl opacity-50 group-hover:opacity-80 transition duration-500"></div>
+                
+                <!-- Gift Box Graphic -->
+                <div class="relative w-56 h-56 md:w-64 md:h-64 bg-gradient-to-br from-red-600 via-rose-700 to-rose-900 rounded-3xl border-2 border-rose-400/50 shadow-2xl flex items-center justify-center animated-box">
+                    <!-- Ribbon Vertical -->
+                    <div class="absolute w-12 h-full bg-gradient-to-b from-amber-300 via-yellow-400 to-amber-500 shadow-md"></div>
+                    <!-- Ribbon Horizontal -->
+                    <div class="absolute h-12 w-full bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-md"></div>
+                    <!-- Big Bow on top -->
+                    <div class="absolute -top-8 w-24 h-16 flex justify-center items-center">
+                        <div class="w-12 h-12 bg-amber-400 rounded-full border-4 border-amber-300 shadow-xl -mr-4 transform -rotate-12"></div>
+                        <div class="w-12 h-12 bg-amber-400 rounded-full border-4 border-amber-300 shadow-xl -ml-4 transform rotate-12"></div>
+                        <div class="w-8 h-8 bg-amber-500 rounded-full border-2 border-yellow-200 z-10 shadow-lg"></div>
+                    </div>
+                    <!-- Heart Symbol Center -->
+                    <div class="z-10 bg-rose-950/80 p-4 rounded-full border border-rose-400/60 text-4xl shadow-inner group-hover:scale-110 transition-transform">
+                        🎁
+                    </div>
+                </div>
+            </div>
+
+            <p class="text-xs text-rose-400/80 tracking-widest animate-pulse font-bold mt-2">
+                [ انقري على الصندوق لفتح المرحلة الأولى ✨ ]
+            </p>
+        </section>
+
+        <!-- STAGE 1 CONTENT DISPLAY MODAL / CARD (Triggered after click) -->
+        <div id="stage1Card" class="hidden w-full max-w-xl glass-card rounded-3xl p-6 md:p-8 card-appear relative my-4">
+            <div class="text-rose-400 text-5xl mb-3">🌹</div>
+            <h2 class="text-2xl md:text-3xl font-extrabold text-rose-200 mb-4">
+                انتي كل عمري وحياتي كلها!
+            </h2>
+            <p class="text-lg md:text-xl text-rose-100 leading-relaxed font-semibold mb-6">
+                "انتي كل عمري، وانتي قلبي وكبدي وحياتي كلها يا أحلى وأغلى نمنم بالدنيا كلها! وجودج يمي هو أحلى شي صار بتمَام سنيني!"
+            </p>
+            <button onclick="goToStage2()" class="w-full py-4 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black text-lg rounded-2xl shadow-xl shadow-rose-900/60 transform hover:-translate-y-1 active:translate-y-0 transition-all duration-300 border border-rose-400/40">
+                انتقلي للمرحلة الثانية يا قلبي ❤️ ➔
+            </button>
+        </div>
+
+
+        <!-- STAGE 2: Interactive Memory & Love Expressions -->
+        <section id="stage2" class="hidden w-full flex-col items-center">
+            <div class="mb-6 space-y-2">
+                <span class="text-xs uppercase font-bold tracking-widest text-rose-400 bg-rose-950/80 px-3 py-1 rounded-full border border-rose-800">المرحلة الثانية ✨</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-rose-100">
+                    كلام طالع من أعمق مكان بقلبي إليج
+                </h2>
+                <p class="text-rose-300 text-base md:text-lg">
+                    اضغطي على كل بطاقة واقري شنو كاتبلج بصوت قلبي..
+                </p>
+            </div>
+
+            <!-- Grid of 3 Interactive Iraqi Dialect Love Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full my-4">
+                <!-- Card 1 -->
+                <div onclick="revealQuote(1)" id="qCard1" class="glass-card p-5 rounded-2xl cursor-pointer hover:border-rose-400 transition-all duration-300 transform hover:-translate-y-2 flex flex-col items-center text-center">
+                    <span class="text-3xl mb-2">💌</span>
+                    <h3 class="font-bold text-rose-300 mb-2">سر ضحكتي</h3>
+                    <p id="qText1" class="text-sm text-rose-200/60 font-medium">اضغطي هنا لفتح الرسالة الأولى..</p>
+                </div>
+
+                <!-- Card 2 -->
+                <div onclick="revealQuote(2)" id="qCard2" class="glass-card p-5 rounded-2xl cursor-pointer hover:border-rose-400 transition-all duration-300 transform hover:-translate-y-2 flex flex-col items-center text-center">
+                    <span class="text-3xl mb-2">👑</span>
+                    <h3 class="font-bold text-rose-300 mb-2">أميرتي وملاكي</h3>
+                    <p id="qText2" class="text-sm text-rose-200/60 font-medium">اضغطي هنا لفتح الرسالة الثانية..</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div onclick="revealQuote(3)" id="qCard3" class="glass-card p-5 rounded-2xl cursor-pointer hover:border-rose-400 transition-all duration-300 transform hover:-translate-y-2 flex flex-col items-center text-center">
+                    <span class="text-3xl mb-2">✨</span>
+                    <h3 class="font-bold text-rose-300 mb-2">نعمة ربي الي</h3>
+                    <p id="qText3" class="text-sm text-rose-200/60 font-medium">اضغطي هنا لفتح الرسالة الثالثة..</p>
+                </div>
+            </div>
+
+            <div id="stage2NextBtnContainer" class="w-full mt-6 opacity-50 pointer-events-none transition-all duration-500">
+                <button onclick="goToStage3()" class="w-full max-w-md py-4 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 text-white font-black text-lg rounded-2xl shadow-xl shadow-rose-900/80 hover:scale-105 transition-all duration-300 border border-rose-400/40">
+                    الذهاب للمرحلة الأخيرة المفاجأة الكبرى! 🌹✨
+                </button>
+            </div>
+        </section>
+
+
+        <!-- STAGE 3: Final Grand Stage - Rose Explosion & Ultimate Love Letter -->
+        <section id="stage3" class="hidden w-full flex-col items-center">
+            <div class="mb-6 space-y-2">
+                <span class="text-xs uppercase font-bold tracking-widest text-rose-300 bg-rose-950 px-3 py-1 rounded-full border border-rose-700">المرحلة الأخيرة والختامية 🌹</span>
+                <h2 class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-200 via-rose-300 to-red-400">
+                    مطر الورد والرسالة الكبرى 🌸
+                </h2>
+                <p class="text-rose-200 text-lg">
+                    انقري على الصندوق السحري الأخير ليمطر الدنيا ورد ويفك الشفرة!
+                </p>
+            </div>
+
+            <!-- Final Magic Box Button -->
+            <div id="finalBoxBtn" onclick="triggerRoseExplosion()" class="relative cursor-pointer my-6 group">
+                <div class="absolute -inset-4 bg-rose-500 rounded-full blur-xl opacity-75 group-hover:opacity-100 animate-pulse"></div>
+                <div class="relative w-36 h-36 bg-gradient-to-tr from-red-600 to-rose-500 rounded-full border-4 border-amber-300 flex items-center justify-center text-6xl shadow-2xl hover:scale-110 active:scale-95 transition-transform duration-300">
+                    🌹
+                </div>
+            </div>
+
+            <!-- Golden Final Rose Container (Appears after clicking final box) -->
+            <div id="goldenRoseWrapper" class="hidden flex-col items-center card-appear my-6">
+                <p class="text-rose-300 text-lg font-bold mb-3 animate-bounce">
+                    شوفي هاي الوردة الأخيرة المميزة.. تشيلج رسالة الحب القوية! اضغطي عليها:
+                </p>
+                <div onclick="openFinalLetterModal()" class="w-28 h-28 bg-gradient-to-br from-amber-400 via-rose-500 to-red-700 rounded-full border-4 border-amber-200 shadow-2xl flex items-center justify-center text-5xl cursor-pointer hover:scale-125 transition-all duration-300 shadow-rose-500/80 animate-pulse">
+                    📜
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FINAL LOVE LETTER MODAL POPUP -->
+    <div id="letterModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-card max-w-xl w-full rounded-3xl p-6 md:p-8 relative border-2 border-rose-500/50 max-h-[90vh] overflow-y-auto">
+            <!-- Close Button -->
+            <button onclick="closeLetterModal()" class="absolute top-4 left-4 w-10 h-10 rounded-full bg-rose-900/80 hover:bg-rose-800 text-rose-200 flex items-center justify-center text-xl font-bold border border-rose-500/30">
+                ✕
+            </button>
+
+            <div class="text-center space-y-4">
+                <div class="inline-block p-3 rounded-full bg-rose-950/80 border border-rose-500/40 text-4xl mb-2">
+                    💌
+                </div>
+                <h3 class="text-2xl md:text-3xl font-black text-rose-200">
+                    إلى أغلى وأحلى "نمنم" بالكون كله ❤️
+                </h3>
+                
+                <div class="h-0.5 w-32 bg-gradient-to-r from-transparent via-rose-500 to-transparent mx-auto my-4"></div>
+
+                <!-- Emotional Iraqi Dialect Letter -->
+                <div class="text-right text-rose-100 space-y-4 text-base md:text-lg leading-relaxed font-semibold bg-rose-950/40 p-5 rounded-2xl border border-rose-900/60">
+                    <p>
+                        يا بعد راسي ويا عافية قلبي..
+                    </p>
+                    <p>
+                        ما أدري منين أبدأ وياج بالكلام، بس أعرف شغله وحده أكيدة: من يوم الدخلتي بحياتي وكلشي بيها تغير وصار إله طعم ثاني أحلى بمليون مرة. انتي مو بس حبيبتي، انتي روحي وكبدي، وعمر ثاني أنعطى إلي من رب العالمين.
+                    </p>
+                    <p>
+                        كل لحظة أقضيها وياج تسوى السنين كلها، وضحكتج هي العافية اللي ترد الروح وتنسيني كل تعب هالدنيا. أريد أكلج اليوم وكل يوم: راح أظل أحبج، وأحافظ عليج، وأصير السند والأمان والظهر الج بأصعب وأحلى الأوقات.
+                    </p>
+                    <p>
+                        يا أحلى نمنم بالدنيا كلها، تبقين أنتي الملاذ الأول والأخير لقلبي. كل عام وانتي بوسط قلبي، وكل عام وانتي حبيبتي وأميرتي الأبدية! ❤️
+                    </p>
+                </div>
+
+                <div class="pt-4 flex flex-col sm:flex-row gap-3">
+                    <button onclick="closeLetterModal()" class="flex-1 py-3 bg-rose-900 hover:bg-rose-800 text-rose-100 font-bold rounded-xl transition border border-rose-700/50">
+                        إغلاق الرسالة 🌹
+                    </button>
+                    <button onclick="triggerRoseExplosion()" class="flex-1 py-3 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold rounded-xl shadow-lg transition">
+                        زيدي مطر الورد 🌸✨
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Note -->
+    <footer class="w-full text-center py-4 text-xs text-rose-400/60 z-20">
+        صُنع بحب وحنان خصيصاً لأحلى نمنم ❤️ | عيد الحبيبة
+    </footer>
+
+    <!-- JavaScript logic -->
+    <script>
+        // State variables
+        let currentStage = 1;
+        let revealedCardsCount = 0;
+        let isAudioPlaying = false;
+        let audioCtx = null;
+        let bgOsc = null;
+
+        // Iraqi quotes for Stage 2
+        const quotesData = {
+            1: "ضحكتج هي العافية لقلبي وتجيب راحة البال، يا بعد كل الناس! 💕",
+            2: "انتي أميرتي الماكو منج بجمالج وطيبة قلبج النقي يا أحلى نمنم! 👑",
+            3: "وجودج بحياتي هو أكبر وأحلى نعمة أحمد ربي عليها كل يوم وكل لحظة! ✨"
+        };
+
+        // Initialize Audio context on user interaction
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Web Audio Synthesizer for soft romantic melody SFX
+        function playChime(freq = 523.25, type = 'sine', duration = 0.8) {
+            try {
+                initAudio();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.log("Audio not allowed yet");
+            }
+        }
+
+        // Romantic Chord Playback on Audio Toggle
+        function toggleAudio() {
+            initAudio();
+            const btnText = document.getElementById('audioStatusText');
+            if (!isAudioPlaying) {
+                isAudioPlaying = true;
+                btnText.innerText = "الموسيقى تعمل 🎵";
+                playRomanticArpeggio();
+            } else {
+                isAudioPlaying = false;
+                btnText.innerText = "تشغيل الموسيقى 🎵";
+            }
+        }
+
+        function playRomanticArpeggio() {
+            if (!isAudioPlaying) return;
+            const notes = [261.63, 329.63, 392.00, 523.25, 659.25]; // C major chord notes
+            let delay = 0;
+            notes.forEach((note, idx) => {
+                setTimeout(() => {
+                    if (isAudioPlaying) playChime(note, 'sine', 1.2);
+                }, delay);
+                delay += 350;
+            });
+            setTimeout(() => {
+                if (isAudioPlaying) playRomanticArpeggio();
+            }, 3000);
+        }
+
+        document.getElementById('audioBtn').addEventListener('click', toggleAudio);
+
+        // Stage 1 Gift Box Click Handler
+        document.getElementById('boxContainer').addEventListener('click', function() {
+            playChime(659.25, 'triangle', 1.0);
+            document.getElementById('stage1Card').classList.remove('hidden');
+            this.classList.add('opacity-40', 'pointer-events-none');
+            createHeartBurst();
+        });
+
+        function goToStage2() {
+            playChime(523.25, 'sine', 0.6);
+            document.getElementById('stage1').classList.add('hidden');
+            document.getElementById('stage1Card').classList.add('hidden');
+            document.getElementById('stage2').classList.remove('hidden');
+            document.getElementById('stage2').classList.add('flex');
+
+            // Update Progress Bar
+            document.getElementById('progressLine').style.width = '66%';
+            document.getElementById('step2Dot').classList.replace('bg-rose-950', 'bg-rose-600');
+            document.getElementById('step2Dot').classList.replace('text-rose-400', 'text-white');
+        }
+
+        function revealQuote(num) {
+            playChime(440 + num * 80, 'sine', 0.7);
+            const qCard = document.getElementById(`qCard${num}`);
+            const qText = document.getElementById(`qText${num}`);
+            
+            qText.innerText = quotesData[num];
+            qText.classList.replace('text-rose-200/60', 'text-rose-100');
+            qText.classList.add('font-bold', 'text-base');
+            qCard.classList.add('border-rose-500', 'bg-rose-900/60');
+            qCard.onclick = null; // Disable re-click
+
+            revealedCardsCount++;
+            if (revealedCardsCount >= 3) {
+                const nextContainer = document.getElementById('stage2NextBtnContainer');
+                nextContainer.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        function goToStage3() {
+            playChime(783.99, 'triangle', 1.2);
+            document.getElementById('stage2').classList.add('hidden');
+            document.getElementById('stage3').classList.remove('hidden');
+            document.getElementById('stage3').classList.add('flex');
+
+            // Update Progress Bar
+            document.getElementById('progressLine').style.width = '100%';
+            document.getElementById('step3Dot').classList.replace('bg-rose-950', 'bg-rose-600');
+            document.getElementById('step3Dot').classList.replace('text-rose-400', 'text-white');
+        }
+
+        function triggerRoseExplosion() {
+            playChime(880, 'sine', 1.5);
+            // Spawn extra intense roses in canvas
+            for (let i = 0; i < 40; i++) {
+                petals.push(createPetal(true));
+            }
+            document.getElementById('goldenRoseWrapper').classList.remove('hidden');
+            document.getElementById('goldenRoseWrapper').classList.add('flex');
+        }
+
+        function openFinalLetterModal() {
+            playChime(1046.50, 'sine', 1.8);
+            document.getElementById('letterModal').classList.remove('hidden');
+        }
+
+        function closeLetterModal() {
+            document.getElementById('letterModal').classList.add('hidden');
+        }
+
+        // Heart Burst Particle Effect
+        function createHeartBurst() {
+            for(let i = 0; i < 15; i++) {
+                const heart = document.createElement('div');
+                heart.innerHTML = '❤️';
+                heart.style.position = 'fixed';
+                heart.style.left = (window.innerWidth / 2 + (Math.random() * 200 - 100)) + 'px';
+                heart.style.top = (window.innerHeight / 2 + (Math.random() * 200 - 100)) + 'px';
+                heart.style.fontSize = (Math.random() * 20 + 20) + 'px';
+                heart.style.zIndex = '100';
+                heart.style.transition = 'all 1.5s ease-out';
+                heart.style.opacity = '1';
+                document.body.appendChild(heart);
+
+                setTimeout(() => {
+                    heart.style.transform = `translateY(-150px) scale(1.5)`;
+                    heart.style.opacity = '0';
+                }, 50);
+
+                setTimeout(() => heart.remove(), 1600);
+            }
+        }
+
+        // Canvas Falling Rose Petals Logic
+        const canvas = document.getElementById('roseCanvas');
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        const petals = [];
+        const petalCount = 25;
+
+        function createPetal(burst = false) {
+            return {
+                x: Math.random() * width,
+                y: burst ? Math.random() * height : -20,
+                size: Math.random() * 12 + 10,
+                speedY: Math.random() * 1.5 + 1,
+                speedX: Math.random() * 1 - 0.5,
+                angle: Math.random() * 360,
+                spin: Math.random() * 2 - 1,
+                color: ['#e11d48', '#f43f5e', '#be123c', '#9f1239'][Math.floor(Math.random() * 4)]
+            };
+        }
+
+        for (let i = 0; i < petalCount; i++) {
+            petals.push(createPetal(true));
+        }
+
+        function drawPetal(p) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.angle * Math.PI) / 180);
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(-p.size, -p.size, -p.size, p.size / 2, 0, p.size);
+            ctx.bezierCurveTo(p.size, p.size / 2, p.size, -p.size, 0, 0);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, width, height);
+            petals.forEach((p, index) => {
+                p.y += p.speedY;
+                p.x += Math.sin(p.y / 30) + p.speedX;
+                p.angle += p.spin;
+
+                if (p.y > height + 20) {
+                    petals[index] = createPetal();
+                }
+                drawPetal(p);
+            });
+            requestAnimationFrame(animateCanvas);
+        }
+
+        animateCanvas();
+    </script>
+</body>
+</html>
